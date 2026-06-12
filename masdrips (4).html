@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mas Drips — Sistema de Gestión</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --teal: #0F6E56; --teal-light: #E1F5EE; --teal-mid: #1D9E75; --teal-dark: #085041;
+    --coral: #993C1D; --coral-light: #FAECE7; --coral-mid: #D85A30;
+    --amber-light: #FAEEDA; --amber: #854F0B; --amber-mid: #EF9F27;
+    --blue-light: #E6F1FB; --blue: #185FA5;
+    --bg: #F5F7F6; --surface: #ffffff; --border: #e2e8e5;
+    --text: #1a2420; --text-2: #4a6158; --text-3: #7a9990;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .header-brand { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 32px; height: 32px; background: var(--teal); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-mark svg { width: 18px; height: 18px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .brand-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .brand-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .sync-pill { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; color: var(--text-2); background: var(--bg); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; transition: background 0.3s; }
+  .sync-dot.ok { background: var(--teal-mid); }
+  .sync-dot.saving { background: #EF9F27; }
+  .sync-dot.error { background: #E24B4A; }
+  .user-badge { font-size: 12px; font-weight: 500; color: var(--text-2); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .user-badge:hover { background: var(--border); }
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1.5rem; display: flex; gap: 2px; overflow-x: auto; }
+  .nav-item { padding: 10px 14px; font-size: 13px; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.15s; display: flex; align-items: center; gap: 6px; }
+  .nav-item:hover { color: var(--text); }
+  .nav-item.active { color: var(--teal); border-bottom-color: var(--teal); font-weight: 500; }
+  .nav-item svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-badge { background: var(--coral); color: white; border-radius: 999px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 2px; }
+  .main { flex: 1; padding: 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-title { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .page-sub { font-size: 13px; color: var(--text-3); margin-top: 3px; margin-bottom: 1.25rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.25rem; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; box-shadow: var(--shadow); }
+  .metric-label { font-size: 11px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .metric-value.pos { color: var(--teal); }
+  .metric-value.neg { color: var(--coral); }
+  .metric-value.warn { color: var(--amber); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
+  input, select, textarea { padding: 8px 11px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-family: inherit; width: 100%; outline: none; transition: border-color 0.15s; }
+  input:focus, select:focus, textarea:focus { border-color: var(--teal); background: var(--surface); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; background: var(--surface); color: var(--text-2); font-family: inherit; transition: all 0.15s; }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { background: var(--teal); color: white; border-color: var(--teal); }
+  .btn-primary:hover { background: var(--teal-dark); }
+  .btn-warn { background: var(--amber-mid); color: white; border-color: var(--amber-mid); }
+  .btn-warn:hover { background: #BA7517; }
+  .btn-sm { padding: 4px 8px; font-size: 11px; }
+  .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 10px; color: var(--text); border-bottom: 1px solid #f0f4f2; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8fbfa; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .bg { background: var(--teal-light); color: var(--teal); }
+  .bc { background: var(--coral-light); color: var(--coral); }
+  .ba { background: var(--amber-light); color: var(--amber); }
+  .bb { background: var(--blue-light); color: var(--blue); }
+  .bgray { background: #F1EFE8; color: #5F5E5A; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+  .tab { padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--text-3); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+  .notif { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 1rem; display: none; font-weight: 500; }
+  .notif.ok { background: var(--teal-light); color: var(--teal-dark); border: 1px solid #5DCAA5; }
+  .notif.err { background: var(--coral-light); color: var(--coral); border: 1px solid #F0997B; }
+  .chart-wrap { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin: 0.75rem 0 0.25rem; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .bar-pair { display: flex; gap: 2px; align-items: flex-end; height: 90px; width: 100%; }
+  .bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 3px; }
+  .bar-lbl { font-size: 10px; color: var(--text-3); margin-top: 5px; }
+  .legend { display: flex; gap: 14px; margin-top: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .progress { height: 5px; background: #eef2f0; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 3px; }
+  .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .export-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; cursor: pointer; transition: all 0.15s; background: var(--surface); box-shadow: var(--shadow); }
+  .export-card:hover { border-color: var(--teal); transform: translateY(-1px); }
+  .export-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .export-icon svg { width: 18px; height: 18px; stroke: var(--teal); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .export-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .export-desc { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; display: none; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .modal-sub { font-size: 13px; color: var(--text-3); margin-bottom: 1.25rem; }
+  .user-opt { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; margin-bottom: 8px; transition: all 0.15s; }
+  .user-opt:hover, .user-opt.selected { border-color: var(--teal); background: var(--teal-light); }
+  .user-opt-name { font-weight: 600; color: var(--text); }
+  .user-opt.selected .user-opt-name { color: var(--teal); }
+  .user-opt-role { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .user-opt.selected .user-opt-role { color: var(--teal-dark); }
+  .loading { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  .loading-text { font-size: 14px; color: var(--text-3); }
+  .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { color: var(--text-3); text-align: center; padding: 2rem; font-size: 13px; }
+  .deuda-row-pagada td { opacity: 0.45; text-decoration: line-through; }
+  .alerta-vence { color: var(--coral); font-size: 11px; font-weight: 600; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .export-grid { grid-template-columns: 1fr; } .metrics { grid-template-columns: 1fr 1fr; } .main { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">Conectando con Mas Drips...</div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="modal-bg" id="user-modal">
+  <div class="modal">
+    <div class="modal-title">¿Quién está usando el sistema?</div>
+    <div class="modal-sub">Seleccioná tu perfil para continuar</div>
+    <div class="user-opt" onclick="selectUser('admin', this)">
+      <div class="user-opt-name">Administración</div>
+      <div class="user-opt-role">Dirección general · acceso completo</div>
+    </div>
+    <div class="user-opt" onclick="selectUser('octavio', this)">
+      <div class="user-opt-name">Octavio</div>
+      <div class="user-opt-role">Director médico · acceso completo</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="confirmUser()">Ingresar</button>
+  </div>
+</div>
+
+<!-- MODAL PAGAR DEUDA -->
+<div class="modal-bg" id="pago-modal">
+  <div class="modal">
+    <div class="modal-title">Registrar pago</div>
+    <div class="modal-sub" id="pago-concepto-label"></div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Monto pagado ($)</label>
+      <input type="number" id="pago-monto" placeholder="0">
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Fecha de pago</label>
+      <input type="date" id="pago-fecha">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">Método</label>
+      <select id="pago-metodo"><option>Transferencia</option><option>Efectivo</option><option>Tarjeta</option><option>Mercado Pago</option></select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1" onclick="cerrarPagoModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmarPago()">Confirmar pago</button>
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="header-brand">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M6 12H2M22 12h-4M7 7l-2-2M19 5l-2 2M7 17l-2 2M19 19l-2-2"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Mas Drips</div>
+      <div class="brand-sub">Medicina Funcional</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sync-pill"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">Conectando...</span></div>
+    <div class="user-badge" onclick="openUserModal()" id="user-badge">—</div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="nav-item active" onclick="nav('dashboard',this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard
+  </div>
+  <div class="nav-item" onclick="nav('ingresos',this)">
+    <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Ingresos
+  </div>
+  <div class="nav-item" onclick="nav('egresos',this)">
+    <svg viewBox="0 0 24 24"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>Egresos
+  </div>
+  <div class="nav-item" onclick="nav('cashflow',this)">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Cashflow
+  </div>
+  <div class="nav-item" onclick="nav('deudas',this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Deudas
+    <span class="nav-badge" id="deudas-badge" style="display:none">0</span>
+  </div>
+  <div class="nav-item" onclick="nav('inventario',this)">
+    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Inventario
+  </div>
+  <div class="nav-item" onclick="nav('exportar',this)">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub" id="dash-periodo">Resumen general</div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Ingresos del mes</div><div class="metric-value pos" id="d-ing">—</div></div>
+      <div class="metric"><div class="metric-label">Egresos del mes</div><div class="metric-value neg" id="d-eg">—</div></div>
+      <div class="metric"><div class="metric-label">Resultado neto</div><div class="metric-value" id="d-net">—</div></div>
+      <div class="metric"><div class="metric-label">Deudas pendientes</div><div class="metric-value warn" id="d-deudas">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cashflow últimos 6 meses <span class="badge" id="d-estado"></span></div>
+      <div class="chart-wrap" id="d-chart"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Ingresos</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#D85A30"></div>Egresos</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Deudas próximas a vencer</div>
+      <div class="table-wrap"><table><thead><tr><th>Concepto</th><th>Categoría</th><th>Vencimiento</th><th style="text-align:right">Monto</th></tr></thead><tbody id="d-deudas-table"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Últimas transacciones</div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Canal</th><th>Usuario</th><th>Tipo</th><th style="text-align:right">Monto</th></tr></thead><tbody id="d-table"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- INGRESOS -->
+  <div class="page" id="page-ingresos">
+    <div class="page-title">Ingresos</div>
+    <div class="page-sub">Registrá servicios y cobros</div>
+    <div class="notif" id="n-ing"></div>
+    <div class="card">
+      <div class="card-title">Nuevo ingreso</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Fecha</label><input type="date" id="i-fecha"></div>
+        <div class="form-group"><label class="form-label">Canal</label><select id="i-canal"><option>Domicilio</option><option>Clínica Milito</option></select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Servicio</label>
+          <select id="i-concepto"><option>Sueroterapia simple</option><option>Sueroterapia premium</option><option>Vitamina C IV</option><option>Glutatión IV</option><option>NAD+ IV</option><option>Membresía / Drip</option><option>Pack suplementos orales</option><option>Consulta funcional</option><option>Otro</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Detalle (opcional)</label><input type="text" id="i-detalle" placeholder="ej: paciente, combo..."></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Monto ($)</label><input type="number" id="i-monto" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Método de pago</label><select id="i-pago"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta débito</option><option>Tarjeta crédito</option><option>Mercado Pago</option><option>Posnet</option><option>Pago en USD</option></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="addIngreso()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar ingreso</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Historial de ingresos</div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Servicio</th><th>Canal</th><th>Pago</th><th>Por</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody id="t-ingresos"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- EGRESOS -->
+  <div class="page" id="page-egresos">
+    <div class="page-title">Egresos</div>
+    <div class="page-sub">Registrá gastos y compras</div>
+    <div class="notif" id="n-eg"></div>
+    <div class="card">
+      <div class="card-title">Nuevo egreso</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Fecha</label><input type="date" id="e-fecha"></div>
+        <div class="form-group"><label class="form-label">Categoría</label><select id="e-cat"><option>Insumos médicos</option><option>Sueros / fluidos</option><option>Suplementos</option><option>Transporte</option><option>Honorarios</option><option>Alquiler / espacio</option><option>Marketing</option><option>Equipamiento</option><option>Limpieza</option><option>Servicios</option><option>Otro</option></select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Detalle</label><input type="text" id="e-detalle" placeholder="ej: agujas, suero fisiológico..."></div>
+        <div class="form-group"><label class="form-label">Proveedor (opcional)</label><input type="text" id="e-prov" placeholder="ej: Droguería XYZ"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Monto ($)</label><input type="number" id="e-monto" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Método</label><select id="e-met"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Mercado Pago</option><option>Débito automático</option></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="addEgreso()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar egreso</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Historial de egresos</div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Detalle</th><th>Proveedor</th><th>Por</th><th style="text-align:right">Monto</th><th></th></tr></thead><tbody id="t-egresos"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- CASHFLOW -->
+  <div class="page" id="page-cashflow">
+    <div class="page-title">Cashflow</div>
+    <div class="page-sub">Flujo de caja consolidado</div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Total ingresos</div><div class="metric-value pos" id="cf-i">—</div></div>
+      <div class="metric"><div class="metric-label">Total egresos</div><div class="metric-value neg" id="cf-e">—</div></div>
+      <div class="metric"><div class="metric-label">Resultado neto</div><div class="metric-value" id="cf-n">—</div></div>
+      <div class="metric"><div class="metric-label">Margen</div><div class="metric-value" id="cf-m">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Por canal de ingreso</div>
+      <div class="table-wrap"><table><thead><tr><th>Canal</th><th style="text-align:right">Ingresos</th><th style="text-align:right">%</th></tr></thead><tbody id="cf-canal"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Por categoría de gasto</div>
+      <div class="table-wrap"><table><thead><tr><th>Categoría</th><th style="text-align:right">Egresos</th><th style="text-align:right">%</th></tr></thead><tbody id="cf-cats"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- DEUDAS -->
+  <div class="page" id="page-deudas">
+    <div class="page-title">Deudas y pendientes</div>
+    <div class="page-sub">Seguimiento de compromisos de pago</div>
+    <div class="notif" id="n-deuda"></div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Total pendiente</div><div class="metric-value warn" id="deu-total">—</div></div>
+      <div class="metric"><div class="metric-label">Pendientes</div><div class="metric-value" id="deu-count">—</div></div>
+      <div class="metric"><div class="metric-label">Vencidas</div><div class="metric-value neg" id="deu-vencidas">—</div></div>
+      <div class="metric"><div class="metric-label">Pagadas</div><div class="metric-value pos" id="deu-pagadas">—</div></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="deuTab('lista',this)">Pendientes</div>
+      <div class="tab" onclick="deuTab('historial',this)">Historial pagadas</div>
+      <div class="tab" onclick="deuTab('nueva',this)">Nueva deuda</div>
+    </div>
+
+    <div id="deu-lista">
+      <div class="card">
+        <div class="table-wrap">
+          <table><thead><tr><th>Concepto</th><th>Categoría</th><th>Vencimiento</th><th>Notas</th><th style="text-align:right">Monto</th><th></th></tr></thead>
+          <tbody id="t-deudas-pend"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div id="deu-historial" style="display:none">
+      <div class="card">
+        <div class="table-wrap">
+          <table><thead><tr><th>Concepto</th><th>Categoría</th><th>Fecha pago</th><th style="text-align:right">Monto pagado</th></tr></thead>
+          <tbody id="t-deudas-pag"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div id="deu-nueva" style="display:none">
+      <div class="card">
+        <div class="card-title">Nueva deuda / pendiente</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Concepto</label><input type="text" id="d-concepto" placeholder="ej: Similia Mayo"></div>
+          <div class="form-group"><label class="form-label">Categoría</label>
+            <select id="d-cat"><option>Suplementos</option><option>Honorarios</option><option>Servicios</option><option>Alquiler / espacio</option><option>Insumos médicos</option><option>Marketing</option><option>Equipamiento</option><option>Transporte</option><option>Otro</option></select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Monto ($)</label><input type="number" id="d-monto" placeholder="0 si no se conoce aún"></div>
+          <div class="form-group"><label class="form-label">Fecha de vencimiento</label><input type="date" id="d-vencimiento"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label class="form-label">Notas (opcional)</label>
+          <input type="text" id="d-notas" placeholder="ej: 3 cuotas pendientes, cuenta de Octavio...">
+        </div>
+        <button class="btn btn-primary" onclick="addDeuda()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar deuda</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVENTARIO -->
+  <div class="page" id="page-inventario">
+    <div class="page-title">Inventario</div>
+    <div class="page-sub">Control de stock de insumos y productos</div>
+    <div class="notif" id="n-st"></div>
+    <div class="tabs">
+      <div class="tab active" onclick="invTab('lista',this)">Stock actual</div>
+      <div class="tab" onclick="invTab('nuevo',this)">Agregar producto</div>
+    </div>
+    <div id="inv-lista">
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th><th>Unidad</th><th>Mínimo</th><th>Estado</th><th></th></tr></thead><tbody id="t-stock"></tbody></table></div></div>
+    </div>
+    <div id="inv-nuevo" style="display:none">
+      <div class="card">
+        <div class="card-title">Nuevo producto</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Nombre</label><input type="text" id="s-nom" placeholder="ej: Vitamina C 10g"></div>
+          <div class="form-group"><label class="form-label">Categoría</label><select id="s-cat"><option>Sueros</option><option>Vitaminas IV</option><option>Aminoácidos</option><option>Minerales</option><option>Suplementos orales</option><option>Insumos descartables</option><option>Equipamiento</option></select></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Cantidad inicial</label><input type="number" id="s-qty" placeholder="0"></div>
+          <div class="form-group"><label class="form-label">Unidad</label><select id="s-uni"><option>unidades</option><option>frascos</option><option>ampollas</option><option>cajas</option><option>bolsas</option><option>litros</option><option>ml</option></select></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Stock mínimo</label><input type="number" id="s-min" placeholder="5"></div>
+          <div class="form-group"><label class="form-label">Costo unitario ($)</label><input type="number" id="s-costo" placeholder="0"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addStock()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar al inventario</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORTAR -->
+  <div class="page" id="page-exportar">
+    <div class="page-title">Exportar informes</div>
+    <div class="page-sub">Descargá reportes en CSV · compatible con Excel y Google Sheets</div>
+    <div class="card">
+      <div class="card-title">Filtrar por período</div>
+      <div class="form-grid" style="max-width:400px">
+        <div class="form-group"><label class="form-label">Desde</label><input type="date" id="ex-desde"></div>
+        <div class="form-group"><label class="form-label">Hasta</label><input type="date" id="ex-hasta"></div>
+      </div>
+    </div>
+    <div class="export-grid">
+      <div class="export-card" onclick="exportar('ingresos')"><div class="export-icon"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div><div class="export-title">Ingresos</div><div class="export-desc">Todos los cobros del período</div></div>
+      <div class="export-card" onclick="exportar('egresos')"><div class="export-icon"><svg viewBox="0 0 24 24"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg></div><div class="export-title">Egresos</div><div class="export-desc">Todos los gastos del período</div></div>
+      <div class="export-card" onclick="exportar('cashflow')"><div class="export-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="export-title">Cashflow consolidado</div><div class="export-desc">Ingresos + egresos + neto</div></div>
+      <div class="export-card" onclick="exportar('deudas')"><div class="export-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="export-title">Deudas pendientes</div><div class="export-desc">Compromisos de pago activos</div></div>
+      <div class="export-card" onclick="exportar('inventario')"><div class="export-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><div class="export-title">Inventario actual</div><div class="export-desc">Stock completo con valores</div></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SUPA_URL = 'https://kdjgexfqzrkdpjlbozsq.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkamdleGZxenJrZHBqbGJvenNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyODQ4NTYsImV4cCI6MjA5Njg2MDg1Nn0.4cRABAoFb1MtRfHCYu0xbeAYc13R2d_9qwCIk4AsJvQ';
+const HDR = { 'Content-Type':'application/json', 'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY, 'Prefer':'return=representation' };
+
+async function sbGet(table, params='') {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?order=created_at.desc${params?'&'+params:''}`, {headers:HDR});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbInsert(table, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {method:'POST', headers:HDR, body:JSON.stringify(data)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbDelete(table, id) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {method:'DELETE', headers:HDR});
+  if(!r.ok) throw new Error(await r.text());
+}
+async function sbUpdate(table, id, data) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {method:'PATCH', headers:HDR, body:JSON.stringify(data)});
+  if(!r.ok) throw new Error(await r.text());
+}
+
+let DB = {ingresos:[], egresos:[], stock:[], deudas:[]};
+let currentUser = localStorage.getItem('md_user') || null;
+let selectedUserTemp = null;
+let pagoDeudaId = null;
+
+function setSyncStatus(state, lbl) {
+  document.getElementById('sync-dot').className = 'sync-dot '+state;
+  document.getElementById('sync-label').textContent = lbl;
+}
+function fmt(n) { return '$'+Math.round(n).toLocaleString('es-AR'); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function userLabel(u) { return u==='octavio'?'Octavio':'Admin'; }
+
+function diasHasta(fecha) {
+  if(!fecha) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const f = new Date(fecha+'T00:00:00');
+  return Math.round((f-hoy)/(1000*60*60*24));
+}
+
+function openUserModal() { document.getElementById('user-modal').classList.add('open'); selectedUserTemp=currentUser; highlightUser(currentUser); }
+function selectUser(u,el) { selectedUserTemp=u; document.querySelectorAll('.user-opt').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); }
+function highlightUser(u) {
+  document.querySelectorAll('.user-opt').forEach(x=>x.classList.remove('selected'));
+  if(!u) return;
+  const opts=document.querySelectorAll('.user-opt');
+  if(u==='admin') opts[0].classList.add('selected');
+  if(u==='octavio') opts[1].classList.add('selected');
+}
+function confirmUser() {
+  if(!selectedUserTemp) return;
+  currentUser=selectedUserTemp;
+  localStorage.setItem('md_user',currentUser);
+  document.getElementById('user-badge').textContent=currentUser==='octavio'?'Octavio':'Administración';
+  document.getElementById('user-modal').classList.remove('open');
+}
+
+async function init() {
+  try {
+    setSyncStatus('saving','Cargando...');
+    // Create deudas table if needed via insert test
+    const [ing,eg,st] = await Promise.all([sbGet('ingresos'), sbGet('egresos'), sbGet('stock','order=nombre.asc')]);
+    DB.ingresos=ing; DB.egresos=eg; DB.stock=st.length?st:[];
+    if(!st.length) await seedStock();
+    // Load deudas
+    try { DB.deudas = await sbGet('deudas','order=vencimiento.asc'); } catch(e){ DB.deudas=[]; }
+    setSyncStatus('ok','Sincronizado');
+  } catch(e) { setSyncStatus('error','Sin conexión'); console.error(e); }
+
+  const t=today();
+  ['i-fecha','e-fecha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  const d=new Date(); d.setDate(1);
+  document.getElementById('ex-desde').value=d.toISOString().split('T')[0];
+  document.getElementById('ex-hasta').value=t;
+  document.getElementById('loading').style.display='none';
+
+  if(!currentUser) { document.getElementById('user-modal').classList.add('open'); }
+  else { document.getElementById('user-badge').textContent=currentUser==='octavio'?'Octavio':'Administración'; highlightUser(currentUser); }
+
+  renderAll();
+}
+
+async function seedStock() {
+  const items=[
+    {id:uid(),nombre:'Suero fisiológico 500ml',categoria:'Sueros',cantidad:24,unidad:'bolsas',minimo:10,costo:1200},
+    {id:uid(),nombre:'Vitamina C 10g',categoria:'Vitaminas IV',cantidad:8,unidad:'ampollas',minimo:10,costo:3500},
+    {id:uid(),nombre:'Glutatión 600mg',categoria:'Vitaminas IV',cantidad:3,unidad:'ampollas',minimo:6,costo:5200},
+    {id:uid(),nombre:'NAD+ 500mg',categoria:'Aminoácidos',cantidad:5,unidad:'frascos',minimo:3,costo:18000},
+    {id:uid(),nombre:'Agujas 21G',categoria:'Insumos descartables',cantidad:150,unidad:'unidades',minimo:50,costo:85},
+    {id:uid(),nombre:'Catéter IV',categoria:'Insumos descartables',cantidad:40,unidad:'unidades',minimo:20,costo:350},
+  ];
+  for(const item of items){await sbInsert('stock',item);}
+  DB.stock=await sbGet('stock','order=nombre.asc');
+}
+
+function nav(page,el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  el.classList.add('active');
+  if(page==='dashboard') renderDashboard();
+  if(page==='cashflow') renderCashflow();
+  if(page==='inventario') renderStock();
+  if(page==='deudas') renderDeudas();
+}
+function invTab(tab,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('inv-lista').style.display=tab==='lista'?'':'none';document.getElementById('inv-nuevo').style.display=tab==='nuevo'?'':'none';}
+function deuTab(tab,el){document.querySelectorAll('#page-deudas .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['lista','historial','nueva'].forEach(t=>document.getElementById('deu-'+t).style.display=t===tab?'':'none');}
+function notif(id,msg,err){const el=document.getElementById(id);el.textContent=msg;el.className='notif '+(err?'err':'ok');el.style.display='block';setTimeout(()=>el.style.display='none',3500);}
+
+// ── INGRESOS ──
+async function addIngreso() {
+  const fecha=document.getElementById('i-fecha').value, monto=parseFloat(document.getElementById('i-monto').value);
+  if(!fecha||!monto||monto<=0){notif('n-ing','Completá fecha y monto.',true);return;}
+  const row={id:uid(),fecha,canal:document.getElementById('i-canal').value,concepto:document.getElementById('i-concepto').value,detalle:document.getElementById('i-detalle').value,monto,pago:document.getElementById('i-pago').value,usuario:currentUser||'admin'};
+  setSyncStatus('saving','Guardando...');
+  try{await sbInsert('ingresos',row);DB.ingresos.unshift(row);document.getElementById('i-monto').value='';document.getElementById('i-detalle').value='';setSyncStatus('ok','Guardado ✓');renderIngresos();renderDashboard();notif('n-ing','✓ Ingreso registrado: '+fmt(monto));}
+  catch(e){setSyncStatus('error','Error');notif('n-ing','Error al guardar.',true);}
+}
+async function borrarIngreso(id){setSyncStatus('saving','Guardando...');try{await sbDelete('ingresos',id);DB.ingresos=DB.ingresos.filter(r=>r.id!==id);setSyncStatus('ok','Guardado ✓');renderIngresos();renderDashboard();}catch(e){setSyncStatus('error','Error');}}
+
+// ── EGRESOS ──
+async function addEgreso(){
+  const fecha=document.getElementById('e-fecha').value, monto=parseFloat(document.getElementById('e-monto').value);
+  if(!fecha||!monto||monto<=0){notif('n-eg','Completá fecha y monto.',true);return;}
+  const row={id:uid(),fecha,categoria:document.getElementById('e-cat').value,detalle:document.getElementById('e-detalle').value,proveedor:document.getElementById('e-prov').value,monto,metodo:document.getElementById('e-met').value,usuario:currentUser||'admin'};
+  setSyncStatus('saving','Guardando...');
+  try{await sbInsert('egresos',row);DB.egresos.unshift(row);document.getElementById('e-monto').value='';document.getElementById('e-detalle').value='';document.getElementById('e-prov').value='';setSyncStatus('ok','Guardado ✓');renderEgresos();renderDashboard();notif('n-eg','✓ Egreso registrado: '+fmt(monto));}
+  catch(e){setSyncStatus('error','Error');notif('n-eg','Error al guardar.',true);}
+}
+async function borrarEgreso(id){setSyncStatus('saving','Guardando...');try{await sbDelete('egresos',id);DB.egresos=DB.egresos.filter(r=>r.id!==id);setSyncStatus('ok','Guardado ✓');renderEgresos();renderDashboard();}catch(e){setSyncStatus('error','Error');}}
+
+// ── STOCK ──
+async function addStock(){
+  const nombre=document.getElementById('s-nom').value.trim();
+  if(!nombre){notif('n-st','Ingresá el nombre del producto.',true);return;}
+  const row={id:uid(),nombre,categoria:document.getElementById('s-cat').value,cantidad:parseInt(document.getElementById('s-qty').value)||0,unidad:document.getElementById('s-uni').value,minimo:parseInt(document.getElementById('s-min').value)||0,costo:parseFloat(document.getElementById('s-costo').value)||0};
+  setSyncStatus('saving','Guardando...');
+  try{await sbInsert('stock',row);DB.stock.unshift(row);['s-nom','s-qty','s-min','s-costo'].forEach(id=>document.getElementById(id).value='');setSyncStatus('ok','Guardado ✓');notif('n-st','✓ Producto agregado.');invTab('lista',document.querySelectorAll('#page-inventario .tab')[0]);renderStock();}
+  catch(e){setSyncStatus('error','Error');notif('n-st','Error al guardar.',true);}
+}
+async function ajustarStock(id,delta){const s=DB.stock.find(x=>x.id===id);if(!s)return;const nueva=Math.max(0,s.cantidad+delta);setSyncStatus('saving','Guardando...');try{await sbUpdate('stock',id,{cantidad:nueva});s.cantidad=nueva;setSyncStatus('ok','Guardado ✓');renderStock();}catch(e){setSyncStatus('error','Error');}}
+
+// ── DEUDAS ──
+async function addDeuda(){
+  const concepto=document.getElementById('d-concepto').value.trim();
+  if(!concepto){notif('n-deuda','Ingresá el concepto de la deuda.',true);return;}
+  const row={id:uid(),concepto,categoria:document.getElementById('d-cat').value,monto:parseFloat(document.getElementById('d-monto').value)||0,vencimiento:document.getElementById('d-vencimiento').value||null,notas:document.getElementById('d-notas').value,estado:'pendiente',usuario:currentUser||'admin'};
+  setSyncStatus('saving','Guardando...');
+  try{await sbInsert('deudas',row);DB.deudas.push(row);['d-concepto','d-monto','d-notas'].forEach(id=>document.getElementById(id).value='');setSyncStatus('ok','Guardado ✓');notif('n-deuda','✓ Deuda registrada.');deuTab('lista',document.querySelectorAll('#page-deudas .tab')[0]);renderDeudas();updateDeudasBadge();}
+  catch(e){setSyncStatus('error','Error');notif('n-deuda','Error al guardar. Puede que falte crear la tabla deudas en Supabase.',true);}
+}
+
+function abrirPagoModal(id){
+  pagoDeudaId=id;
+  const d=DB.deudas.find(x=>x.id===id);
+  document.getElementById('pago-concepto-label').textContent=d?d.concepto:'';
+  document.getElementById('pago-monto').value=d&&d.monto?d.monto:'';
+  document.getElementById('pago-fecha').value=today();
+  document.getElementById('pago-modal').classList.add('open');
+}
+function cerrarPagoModal(){document.getElementById('pago-modal').classList.remove('open');pagoDeudaId=null;}
+
+async function confirmarPago(){
+  if(!pagoDeudaId) return;
+  const monto=parseFloat(document.getElementById('pago-monto').value)||0;
+  const fecha=document.getElementById('pago-fecha').value;
+  const metodo=document.getElementById('pago-metodo').value;
+  const d=DB.deudas.find(x=>x.id===pagoDeudaId);
+  if(!d) return;
+  setSyncStatus('saving','Guardando...');
+  try{
+    await sbUpdate('deudas',pagoDeudaId,{estado:'pagada',fecha_pago:fecha,monto_pagado:monto});
+    d.estado='pagada'; d.fecha_pago=fecha; d.monto_pagado=monto;
+    // Registrar como egreso
+    if(monto>0){
+      const egRow={id:uid(),fecha,categoria:d.categoria,detalle:d.concepto+' (deuda saldada)',proveedor:'',monto,metodo,usuario:currentUser||'admin'};
+      await sbInsert('egresos',egRow);
+      DB.egresos.unshift(egRow);
+    }
+    setSyncStatus('ok','Guardado ✓');
+    cerrarPagoModal();
+    renderDeudas(); renderEgresos(); renderDashboard(); updateDeudasBadge();
+    notif('n-deuda','✓ Pago registrado y cargado como egreso.');
+  } catch(e){setSyncStatus('error','Error');notif('n-deuda','Error al guardar.',true);}
+}
+
+async function borrarDeuda(id){
+  setSyncStatus('saving','Guardando...');
+  try{await sbDelete('deudas',id);DB.deudas=DB.deudas.filter(r=>r.id!==id);setSyncStatus('ok','Guardado ✓');renderDeudas();updateDeudasBadge();}
+  catch(e){setSyncStatus('error','Error');}
+}
+
+function updateDeudasBadge(){
+  const pend=DB.deudas.filter(d=>d.estado==='pendiente').length;
+  const badge=document.getElementById('deudas-badge');
+  badge.textContent=pend; badge.style.display=pend>0?'':'none';
+}
+
+// ── RENDERS ──
+function renderAll(){renderDashboard();renderIngresos();renderEgresos();renderStock();renderDeudas();updateDeudasBadge();}
+
+function renderIngresos(){
+  const tb=document.getElementById('t-ingresos');
+  if(!DB.ingresos.length){tb.innerHTML='<tr><td colspan="7" class="empty">Sin ingresos registrados</td></tr>';return;}
+  tb.innerHTML=DB.ingresos.map(r=>`<tr>
+    <td>${r.fecha}</td>
+    <td>${r.concepto}${r.detalle?` <span style="color:var(--text-3);font-size:11px">— ${r.detalle}</span>`:''}</td>
+    <td><span class="badge bb">${r.canal}</span></td>
+    <td>${r.pago}</td>
+    <td style="color:var(--text-3);font-size:12px">${userLabel(r.usuario)}</td>
+    <td style="text-align:right;font-weight:700;color:var(--teal)">${fmt(r.monto)}</td>
+    <td><button class="btn btn-sm" onclick="borrarIngreso('${r.id}')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td>
+  </tr>`).join('');
+}
+
+function renderEgresos(){
+  const tb=document.getElementById('t-egresos');
+  if(!DB.egresos.length){tb.innerHTML='<tr><td colspan="7" class="empty">Sin egresos registrados</td></tr>';return;}
+  tb.innerHTML=DB.egresos.map(r=>`<tr>
+    <td>${r.fecha}</td>
+    <td><span class="badge bc">${r.categoria}</span></td>
+    <td>${r.detalle||'—'}</td>
+    <td>${r.proveedor||'—'}</td>
+    <td style="color:var(--text-3);font-size:12px">${userLabel(r.usuario)}</td>
+    <td style="text-align:right;font-weight:700;color:var(--coral)">${fmt(r.monto)}</td>
+    <td><button class="btn btn-sm" onclick="borrarEgreso('${r.id}')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td>
+  </tr>`).join('');
+}
+
+function renderStock(){
+  const tb=document.getElementById('t-stock');
+  if(!DB.stock.length){tb.innerHTML='<tr><td colspan="7" class="empty">Sin productos en inventario</td></tr>';return;}
+  tb.innerHTML=DB.stock.map(s=>{
+    const bajo=s.cantidad<=s.minimo;
+    const pct=Math.min(100,Math.round((s.cantidad/Math.max(s.minimo*2,1))*100));
+    return `<tr>
+      <td><strong>${s.nombre}</strong></td><td>${s.categoria}</td>
+      <td><span style="font-weight:700;color:${bajo?'var(--coral)':'var(--teal)'}">${s.cantidad}</span>
+        <div class="progress"><div class="progress-fill" style="width:${pct}%;background:${bajo?'var(--coral-mid)':'var(--teal-mid)'}"></div></div></td>
+      <td>${s.unidad}</td><td style="color:var(--text-3)">${s.minimo}</td>
+      <td>${bajo?'<span class="badge bc">Stock bajo</span>':'<span class="badge bg">OK</span>'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="ajustarStock('${s.id}',1)"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button class="btn btn-sm" onclick="ajustarStock('${s.id}',-1)"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDeudas(){
+  const pend=DB.deudas.filter(d=>d.estado==='pendiente');
+  const pag=DB.deudas.filter(d=>d.estado==='pagada');
+  const totalPend=pend.reduce((s,d)=>s+Number(d.monto||0),0);
+  const vencidas=pend.filter(d=>d.vencimiento&&diasHasta(d.vencimiento)<0).length;
+  document.getElementById('deu-total').textContent=fmt(totalPend);
+  document.getElementById('deu-count').textContent=pend.length;
+  document.getElementById('deu-vencidas').textContent=vencidas;
+  document.getElementById('deu-pagadas').textContent=pag.length;
+
+  const tbP=document.getElementById('t-deudas-pend');
+  if(!pend.length){tbP.innerHTML='<tr><td colspan="6" class="empty">No hay deudas pendientes 🎉</td></tr>';}
+  else tbP.innerHTML=pend.map(d=>{
+    const dias=d.vencimiento?diasHasta(d.vencimiento):null;
+    let vencLbl='—';
+    if(d.vencimiento){
+      if(dias<0) vencLbl=`<span class="alerta-vence">${d.vencimiento} (vencida)</span>`;
+      else if(dias<=7) vencLbl=`<span class="alerta-vence">${d.vencimiento} (${dias}d)</span>`;
+      else vencLbl=d.vencimiento;
+    }
+    return `<tr>
+      <td><strong>${d.concepto}</strong></td>
+      <td><span class="badge ba">${d.categoria}</span></td>
+      <td>${vencLbl}</td>
+      <td style="color:var(--text-3);font-size:12px">${d.notas||'—'}</td>
+      <td style="text-align:right;font-weight:700;color:var(--amber)">${d.monto?fmt(d.monto):'Sin monto'}</td>
+      <td style="display:flex;gap:4px;white-space:nowrap">
+        <button class="btn btn-sm btn-warn" onclick="abrirPagoModal('${d.id}')">Pagar</button>
+        <button class="btn btn-sm" onclick="borrarDeuda('${d.id}')"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const tbH=document.getElementById('t-deudas-pag');
+  if(!pag.length){tbH.innerHTML='<tr><td colspan="4" class="empty">Sin pagos registrados aún</td></tr>';}
+  else tbH.innerHTML=pag.map(d=>`<tr class="deuda-row-pagada">
+    <td>${d.concepto}</td>
+    <td>${d.categoria}</td>
+    <td>${d.fecha_pago||'—'}</td>
+    <td style="text-align:right;font-weight:700;color:var(--teal)">${d.monto_pagado?fmt(d.monto_pagado):'—'}</td>
+  </tr>`).join('');
+}
+
+function renderDashboard(){
+  const mes=today().substring(0,7);
+  const ingM=DB.ingresos.filter(r=>r.fecha&&r.fecha.startsWith(mes));
+  const egM=DB.egresos.filter(r=>r.fecha&&r.fecha.startsWith(mes));
+  const tI=ingM.reduce((s,r)=>s+Number(r.monto),0);
+  const tE=egM.reduce((s,r)=>s+Number(r.monto),0);
+  const net=tI-tE;
+  const pend=DB.deudas.filter(d=>d.estado==='pendiente');
+  const totalDeudas=pend.reduce((s,d)=>s+Number(d.monto||0),0);
+  const now=new Date();
+  document.getElementById('dash-periodo').textContent='Resumen · '+now.toLocaleString('es-AR',{month:'long',year:'numeric'});
+  document.getElementById('d-ing').textContent=fmt(tI);
+  document.getElementById('d-eg').textContent=fmt(tE);
+  const ne=document.getElementById('d-net'); ne.textContent=fmt(net); ne.className='metric-value '+(net>=0?'pos':'neg');
+  document.getElementById('d-deudas').textContent=fmt(totalDeudas);
+
+  const est=document.getElementById('d-estado');
+  if(net>0){est.textContent='Mes positivo';est.className='badge bg';}
+  else if(net<0){est.textContent='Mes negativo';est.className='badge bc';}
+  else{est.textContent='Neutro';est.className='badge ba';}
+
+  const meses=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(); d.setMonth(d.getMonth()-i);
+    const key=d.toISOString().substring(0,7);
+    const lbl=d.toLocaleString('es-AR',{month:'short'});
+    const ing=DB.ingresos.filter(r=>r.fecha&&r.fecha.startsWith(key)).reduce((s,r)=>s+Number(r.monto),0);
+    const eg=DB.egresos.filter(r=>r.fecha&&r.fecha.startsWith(key)).reduce((s,r)=>s+Number(r.monto),0);
+    meses.push({lbl,ing,eg});
+  }
+  const maxV=Math.max(...meses.map(m=>Math.max(m.ing,m.eg)),1);
+  document.getElementById('d-chart').innerHTML=meses.map(m=>{
+    const hI=Math.round((m.ing/maxV)*82); const hE=Math.round((m.eg/maxV)*82);
+    return `<div class="bar-col"><div class="bar-pair"><div class="bar" style="background:#1D9E75;height:${hI}px"></div><div class="bar" style="background:#D85A30;height:${hE}px"></div></div><div class="bar-lbl">${m.lbl}</div></div>`;
+  }).join('');
+
+  // Deudas próximas
+  const proximas=pend.filter(d=>d.vencimiento).sort((a,b)=>a.vencimiento.localeCompare(b.vencimiento)).slice(0,5);
+  const dtD=document.getElementById('d-deudas-table');
+  if(!proximas.length){dtD.innerHTML='<tr><td colspan="4" class="empty">Sin deudas con vencimiento cargadas</td></tr>';}
+  else dtD.innerHTML=proximas.map(d=>{
+    const dias=diasHasta(d.vencimiento);
+    const urgente=dias<0||dias<=7;
+    return `<tr>
+      <td><strong>${d.concepto}</strong></td>
+      <td><span class="badge ba">${d.categoria}</span></td>
+      <td>${urgente?`<span class="alerta-vence">${d.vencimiento}</span>`:d.vencimiento}</td>
+      <td style="text-align:right;font-weight:700;color:var(--amber)">${d.monto?fmt(d.monto):'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const recent=[...DB.ingresos.map(r=>({...r,tipo:'I'})),...DB.egresos.map(r=>({...r,tipo:'E',concepto:r.categoria}))]
+    .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,8);
+  const dt=document.getElementById('d-table');
+  if(!recent.length){dt.innerHTML='<tr><td colspan="6" class="empty">Sin transacciones aún</td></tr>';return;}
+  dt.innerHTML=recent.map(r=>`<tr>
+    <td>${r.fecha}</td><td>${r.concepto||r.detalle||'—'}</td><td>${r.canal||'—'}</td>
+    <td style="color:var(--text-3);font-size:12px">${userLabel(r.usuario)}</td>
+    <td>${r.tipo==='I'?'<span class="badge bg">Ingreso</span>':'<span class="badge bc">Egreso</span>'}</td>
+    <td style="text-align:right;font-weight:700;color:${r.tipo==='I'?'var(--teal)':'var(--coral)'}">${r.tipo==='I'?'+':'-'}${fmt(r.monto)}</td>
+  </tr>`).join('');
+}
+
+function renderCashflow(){
+  const tI=DB.ingresos.reduce((s,r)=>s+Number(r.monto),0);
+  const tE=DB.egresos.reduce((s,r)=>s+Number(r.monto),0);
+  const net=tI-tE;
+  document.getElementById('cf-i').textContent=fmt(tI);
+  document.getElementById('cf-e').textContent=fmt(tE);
+  const cn=document.getElementById('cf-n'); cn.textContent=fmt(net); cn.className='metric-value '+(net>=0?'pos':'neg');
+  document.getElementById('cf-m').textContent=tI>0?Math.round((net/tI)*100)+'%':'—';
+  const canales={};
+  DB.ingresos.forEach(r=>{canales[r.canal]=(canales[r.canal]||0)+Number(r.monto);});
+  document.getElementById('cf-canal').innerHTML=Object.entries(canales).length
+    ?Object.entries(canales).map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-weight:600">${fmt(v)}</td><td style="text-align:right;color:var(--text-3)">${tI>0?Math.round((v/tI)*100)+'%':'—'}</td></tr>`).join('')
+    :'<tr><td colspan="3" class="empty">Sin datos</td></tr>';
+  const cats={};
+  DB.egresos.forEach(r=>{cats[r.categoria]=(cats[r.categoria]||0)+Number(r.monto);});
+  document.getElementById('cf-cats').innerHTML=Object.entries(cats).length
+    ?Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-weight:600">${fmt(v)}</td><td style="text-align:right;color:var(--text-3)">${tE>0?Math.round((v/tE)*100)+'%':'—'}</td></tr>`).join('')
+    :'<tr><td colspan="3" class="empty">Sin datos</td></tr>';
+}
+
+function exportar(tipo){
+  const desde=document.getElementById('ex-desde').value, hasta=document.getElementById('ex-hasta').value;
+  let csv='', nombre='';
+  const filtrar=r=>(!desde||r.fecha>=desde)&&(!hasta||r.fecha<=hasta);
+  if(tipo==='ingresos'){nombre='masdrips_ingresos.csv';csv='Fecha,Servicio,Detalle,Canal,Método de pago,Registrado por,Monto\n'+DB.ingresos.filter(filtrar).map(r=>`${r.fecha},"${r.concepto}","${r.detalle||''}","${r.canal}","${r.pago}","${userLabel(r.usuario)}",${r.monto}`).join('\n');}
+  else if(tipo==='egresos'){nombre='masdrips_egresos.csv';csv='Fecha,Categoría,Detalle,Proveedor,Método,Registrado por,Monto\n'+DB.egresos.filter(filtrar).map(r=>`${r.fecha},"${r.categoria}","${r.detalle||''}","${r.proveedor||''}","${r.metodo}","${userLabel(r.usuario)}",${r.monto}`).join('\n');}
+  else if(tipo==='cashflow'){nombre='masdrips_cashflow.csv';const all=[...DB.ingresos.map(r=>({fecha:r.fecha,tipo:'Ingreso',concepto:r.concepto,canal:r.canal,usuario:userLabel(r.usuario),monto:r.monto})),...DB.egresos.map(r=>({fecha:r.fecha,tipo:'Egreso',concepto:r.categoria,canal:'—',usuario:userLabel(r.usuario),monto:-r.monto}))].filter(filtrar).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));csv='Fecha,Tipo,Concepto,Canal,Usuario,Monto\n'+all.map(r=>`${r.fecha},"${r.tipo}","${r.concepto}","${r.canal}","${r.usuario}",${r.monto}`).join('\n');}
+  else if(tipo==='deudas'){nombre='masdrips_deudas.csv';csv='Concepto,Categoría,Estado,Monto,Vencimiento,Notas\n'+DB.deudas.map(d=>`"${d.concepto}","${d.categoria}","${d.estado}",${d.monto||0},"${d.vencimiento||''}","${d.notas||''}"`).join('\n');}
+  else if(tipo==='inventario'){nombre='masdrips_inventario.csv';csv='Producto,Categoría,Stock,Unidad,Mínimo,Estado,Costo unitario,Valor total\n'+DB.stock.map(s=>`"${s.nombre}","${s.categoria}",${s.cantidad},"${s.unidad}",${s.minimo},"${s.cantidad<=s.minimo?'Stock bajo':'OK'}",${s.costo},${s.cantidad*s.costo}`).join('\n');}
+  if(!csv){alert('No hay datos para exportar.');return;}
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=nombre; a.click();
+  URL.revokeObjectURL(url);
+}
+
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
