@@ -224,6 +224,50 @@
       <div class="metric"><div class="metric-label">Deudas pendientes</div><div class="metric-value warn" id="d-deudas">—</div></div>
     </div>
     <div class="card">
+      <div class="card-title">Ingresos del mes — desglose por origen</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:1rem">
+        <!-- Bancos pesos -->
+        <div style="background:var(--teal-light);border-radius:var(--radius-sm);padding:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--teal-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Pesos bancos</div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-2)">Bco Ctes pesos</span><span id="dd-bco-ctes" style="font-weight:600">$0</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-2)">Bco Comafi pesos</span><span id="dd-comafi-ars" style="font-weight:600">$0</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-2)">Bco ICBC pesos</span><span id="dd-icbc-ars" style="font-weight:600">$0</span></div>
+          </div>
+          <div style="border-top:1px solid rgba(15,110,86,.2);padding-top:7px;display:flex;justify-content:space-between;font-size:14px"><span style="font-weight:700;color:var(--teal-dark)">Subtotal</span><span id="dd-sub-bcos-ars" style="font-weight:700;color:var(--teal-dark)">$0</span></div>
+        </div>
+        <!-- Bancos dólares -->
+        <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Dólares bancos</div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-2)">Bco Comafi dólares</span><span id="dd-comafi-usd" style="font-weight:600">USD 0</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-2)">Bco ICBC dólares</span><span id="dd-icbc-usd" style="font-weight:600">USD 0</span></div>
+          </div>
+          <div style="border-top:1px solid rgba(24,95,165,.2);padding-top:7px;display:flex;justify-content:space-between;font-size:14px"><span style="font-weight:700;color:var(--blue)">Subtotal</span><span id="dd-sub-bcos-usd" style="font-weight:700;color:var(--blue)">USD 0</span></div>
+        </div>
+        <!-- Mercado Pago + Eft -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <!-- Mercado Pago -->
+          <div style="background:#FFF8E7;border:1px solid #F5CC6A;border-radius:var(--radius-sm);padding:14px">
+            <div style="font-size:11px;font-weight:700;color:#9B6700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Mercado Pago</div>
+            <div style="display:flex;justify-content:space-between;font-size:14px"><span style="color:var(--text-2)">MP pesos</span><span id="dd-mp" style="font-weight:700;color:#9B6700">$0</span></div>
+          </div>
+          <!-- Eft -->
+          <div style="background:#F5F0FF;border:1px solid #C4AAEE;border-radius:var(--radius-sm);padding:14px">
+            <div style="font-size:11px;font-weight:700;color:#5B2DA0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Efectivo</div>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-2)">Eft pesos</span><span id="dd-eft-ars" style="font-weight:600">$0</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-2)">Eft dólares</span><span id="dd-eft-usd" style="font-weight:600">USD 0</span></div>
+            </div>
+            <div style="border-top:1px solid rgba(91,45,160,.2);padding-top:7px;display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:700;color:#5B2DA0">Pesos eft</span><span id="dd-sub-eft-ars" style="font-weight:700;color:#5B2DA0">$0</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:700;color:#5B2DA0">Dólares eft</span><span id="dd-sub-eft-usd" style="font-weight:700;color:#5B2DA0">USD 0</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-title">Cashflow últimos 6 meses <span class="badge" id="d-estado"></span></div>
       <div class="chart-wrap" id="d-chart"></div>
       <div class="legend">
@@ -260,7 +304,24 @@
       </div>
       <div class="form-grid">
         <div class="form-group"><label class="form-label">Monto ($)</label><input type="number" id="i-monto" placeholder="0"></div>
-        <div class="form-group"><label class="form-label">Método de pago</label><select id="i-pago"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta débito</option><option>Tarjeta crédito</option><option>Mercado Pago</option><option>Posnet</option><option>Pago en USD</option></select></div>
+        <div class="form-group"><label class="form-label">Método de pago</label><select id="i-pago">
+          <optgroup label="Banco — Pesos">
+            <option>Bco Ctes pesos</option>
+            <option>Bco Comafi pesos</option>
+            <option>Bco ICBC pesos</option>
+          </optgroup>
+          <optgroup label="Banco — Dólares">
+            <option>Bco Comafi dólares</option>
+            <option>Bco ICBC dólares</option>
+          </optgroup>
+          <optgroup label="Mercado Pago">
+            <option>Mercado Pago</option>
+          </optgroup>
+          <optgroup label="Efectivo">
+            <option>Eft pesos</option>
+            <option>Eft dólares</option>
+          </optgroup>
+        </select></div>
       </div>
       <button class="btn btn-primary" onclick="addIngreso()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar ingreso</button>
     </div>
@@ -740,6 +801,34 @@ function renderDashboard(){
   document.getElementById('d-eg').textContent=fmt(tE);
   const ne=document.getElementById('d-net'); ne.textContent=fmt(net); ne.className='metric-value '+(net>=0?'pos':'neg');
   document.getElementById('d-deudas').textContent=fmt(totalDeudas);
+
+  // Desglose ingresos por método/banco
+  const fmtUSD = n => 'USD '+Math.round(n).toLocaleString('es-AR');
+  const canalesMap = {
+    'Bco Ctes pesos':   {id:'dd-bco-ctes',   usd:false},
+    'Bco Comafi pesos': {id:'dd-comafi-ars',  usd:false},
+    'Bco ICBC pesos':   {id:'dd-icbc-ars',    usd:false},
+    'Bco Comafi dólares':{id:'dd-comafi-usd', usd:true},
+    'Bco ICBC dólares': {id:'dd-icbc-usd',    usd:true},
+    'Mercado Pago':     {id:'dd-mp',          usd:false},
+    'Eft pesos':        {id:'dd-eft-ars',     usd:false},
+    'Eft dólares':      {id:'dd-eft-usd',     usd:true},
+  };
+  const tots = {};
+  Object.keys(canalesMap).forEach(k=>{tots[k]=0;});
+  ingM.forEach(r=>{if(tots[r.pago]!==undefined) tots[r.pago]+=Number(r.monto);});
+  Object.entries(canalesMap).forEach(([k,v])=>{
+    const el=document.getElementById(v.id);
+    if(el) el.textContent = v.usd ? fmtUSD(tots[k]) : fmt(tots[k]);
+  });
+  const subBcosArs = tots['Bco Ctes pesos']+tots['Bco Comafi pesos']+tots['Bco ICBC pesos'];
+  const subBcosUsd = tots['Bco Comafi dólares']+tots['Bco ICBC dólares'];
+  const subEftArs  = tots['Eft pesos'];
+  const subEftUsd  = tots['Eft dólares'];
+  document.getElementById('dd-sub-bcos-ars').textContent = fmt(subBcosArs);
+  document.getElementById('dd-sub-bcos-usd').textContent = fmtUSD(subBcosUsd);
+  document.getElementById('dd-sub-eft-ars').textContent  = fmt(subEftArs);
+  document.getElementById('dd-sub-eft-usd').textContent  = fmtUSD(subEftUsd);
 
   const est=document.getElementById('d-estado');
   if(net>0){est.textContent='Mes positivo';est.className='badge bg';}
