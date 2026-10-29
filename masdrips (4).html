@@ -271,14 +271,20 @@
     <div class="card" style="margin-bottom:1rem">
       <div class="card-title">🏦 Saldos disponibles</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">💰 Saldos</div>
         <div class="form-group"><label class="form-label">BANCO COMAFI $ (PESOS)</label><input type="number" id="sal-comafi" class="form-input"></div>
         <div class="form-group"><label class="form-label">BANCO COMAFI USD</label><input type="number" id="sal-comafi-usd" class="form-input"></div>
         <div class="form-group"><label class="form-label">BANCO CORRIENTES ($)</label><input type="number" id="sal-corrientes" class="form-input"></div>
+        <div class="form-group"><label class="form-label">BANCO ICBC $ (PESOS)</label><input type="number" id="sal-icbc" class="form-input"></div>
+        <div class="form-group"><label class="form-label">BANCO ICBC USD</label><input type="number" id="sal-icbc-usd" class="form-input"></div>
         <div class="form-group"><label class="form-label">MERCADO PAGO ($)</label><input type="number" id="sal-mp" class="form-input"></div>
         <div class="form-group"><label class="form-label">EFECTIVO ($)</label><input type="number" id="sal-efectivo" class="form-input"></div>
         <div class="form-group"><label class="form-label">EFECTIVO USD</label><input type="number" id="sal-efectivo-usd" class="form-input"></div>
         <div class="form-group"><label class="form-label">🔄 TIPO DE CAMBIO BLUE ($)</label><input type="number" id="sal-tc" class="form-input"></div>
-        <div class="form-group"><label class="form-label">🔴 DESCUBIERTO USADO CORRIENTES ($)</label><input type="number" id="sal-desc" class="form-input"></div>
+        <div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-top:8px">🔴 Descubiertos usados</div>
+        <div class="form-group"><label class="form-label">DESCUBIERTO USADO — CORRIENTES ($)</label><input type="number" id="sal-desc" class="form-input"></div>
+        <div class="form-group"><label class="form-label">DESCUBIERTO USADO — COMAFI ($)</label><input type="number" id="sal-desc-comafi" class="form-input"></div>
+        <div class="form-group"><label class="form-label">DESCUBIERTO USADO — ICBC ($)</label><input type="number" id="sal-desc-icbc" class="form-input"></div>
       </div>
       <button class="btn" onclick="guardarSaldos()" style="background:var(--teal);color:#fff">💾 Guardar saldos</button>
       <div style="margin-top:10px;font-size:13px;color:var(--text-3)" id="sal-msg"></div>
@@ -911,9 +917,14 @@ function renderDashboard(){
 
 function cargarSaldos() {
   const mapa = {
-    'comafi':'sal-comafi','comafi_usd':'sal-comafi-usd','corrientes':'sal-corrientes',
+    'comafi':'sal-comafi','comafi_usd':'sal-comafi-usd',
+    'corrientes':'sal-corrientes',
+    'icbc':'sal-icbc','icbc_usd':'sal-icbc-usd',
     'mp':'sal-mp','efectivo':'sal-efectivo','efectivo_usd':'sal-efectivo-usd',
-    'tipo_cambio':'sal-tc','descubierto_usado':'sal-desc'
+    'tipo_cambio':'sal-tc',
+    'descubierto_usado':'sal-desc',
+    'descubierto_usado_comafi':'sal-desc-comafi',
+    'descubierto_usado_icbc':'sal-desc-icbc'
   };
   (DB.saldos||[]).forEach(s=>{
     const id = mapa[s.id];
@@ -925,14 +936,18 @@ function cargarSaldos() {
 
 async function guardarSaldos() {
   const mapa = [
-    {id:'comafi',          el:'sal-comafi'},
-    {id:'comafi_usd',      el:'sal-comafi-usd'},
-    {id:'corrientes',      el:'sal-corrientes'},
-    {id:'mp',              el:'sal-mp'},
-    {id:'efectivo',        el:'sal-efectivo'},
-    {id:'efectivo_usd',    el:'sal-efectivo-usd'},
-    {id:'tipo_cambio',     el:'sal-tc'},
-    {id:'descubierto_usado',el:'sal-desc'},
+    {id:'comafi',                   el:'sal-comafi'},
+    {id:'comafi_usd',               el:'sal-comafi-usd'},
+    {id:'corrientes',               el:'sal-corrientes'},
+    {id:'icbc',                     el:'sal-icbc'},
+    {id:'icbc_usd',                 el:'sal-icbc-usd'},
+    {id:'mp',                       el:'sal-mp'},
+    {id:'efectivo',                 el:'sal-efectivo'},
+    {id:'efectivo_usd',             el:'sal-efectivo-usd'},
+    {id:'tipo_cambio',              el:'sal-tc'},
+    {id:'descubierto_usado',        el:'sal-desc'},
+    {id:'descubierto_usado_comafi', el:'sal-desc-comafi'},
+    {id:'descubierto_usado_icbc',   el:'sal-desc-icbc'},
   ];
   const msg = document.getElementById('sal-msg');
   msg.textContent = 'Guardando...';
