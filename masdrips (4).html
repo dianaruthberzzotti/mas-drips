@@ -1017,7 +1017,7 @@ function exportar(tipo){
   const SEP=';'; // punto y coma para Excel en español
   if(tipo==='ingresos'){
     nombre='masdrips_ingresos.csv';
-    const esUSD=p=>p&&(p.includes('dólar')||p.includes('dolar')||p.includes('USD'));
+    const esUSD=p=>p&&(p.toLowerCase().includes('dólar')||p.toLowerCase().includes('dolar')||p.toUpperCase().includes('USD'));
     const esc=v=>`"${String(v||'').replace(/"/g,'""')}"`;
     csv='sep=;\nFecha;Servicio;Paciente/Detalle;Canal;Método de pago;Registrado por;Pesos ARS;Dólares USD\n'+
       [...DB.ingresos].filter(filtrar)
@@ -1039,7 +1039,7 @@ function exportar(tipo){
   }
   else if(tipo==='cashflow'){
     nombre='masdrips_cashflow.csv';
-    const esUSD2=p=>p&&(p.includes('dólar')||p.includes('dolar')||p.includes('USD'));
+    const esUSD2=p=>p&&(p.toLowerCase().includes('dólar')||p.toLowerCase().includes('dolar')||p.toUpperCase().includes('USD'));
     const esc=v=>`"${String(v||'').replace(/"/g,'""')}"`;
     const allI=DB.ingresos.filter(filtrar).map(r=>{
       const sinCanal=!r.canal||r.canal.trim()==='';
