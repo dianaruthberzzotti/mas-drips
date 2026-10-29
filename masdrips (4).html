@@ -1014,26 +1014,33 @@ function exportar(tipo){
   const desde=document.getElementById('ex-desde').value, hasta=document.getElementById('ex-hasta').value;
   let csv='', nombre='';
   const filtrar=r=>(!desde||r.fecha>=desde)&&(!hasta||r.fecha<=hasta);
+  const SEP=';'; // punto y coma para Excel en español
   if(tipo==='ingresos'){
     nombre='masdrips_ingresos.csv';
     const esUSD=p=>p&&(p.includes('dólar')||p.includes('dolar')||p.includes('USD'));
-    csv='Fecha,Servicio,Paciente/Detalle,Canal,Método de pago,Registrado por,Pesos ARS,Dólares USD\n'+
+    const esc=v=>`"${String(v||'').replace(/"/g,'""')}"`;
+    csv='sep=;\nFecha;Servicio;Paciente/Detalle;Canal;Método de pago;Registrado por;Pesos ARS;Dólares USD\n'+
       [...DB.ingresos].filter(filtrar)
         .sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))
         .map(r=>{
           const usd=esUSD(r.pago);
-          // Los registros sync (canal='') tienen concepto=nombre, detalle=servicio → invertir
           const sinCanal = !r.canal || r.canal.trim()==='';
           const servicio = sinCanal ? (r.detalle||r.concepto||'') : (r.concepto||'');
           const paciente  = sinCanal ? (r.concepto||'')            : (r.detalle||'');
           const canalLabel = sinCanal ? 'manual' : r.canal;
-          return `${r.fecha},"${servicio}","${paciente}","${canalLabel}","${r.pago}","${userLabel(r.usuario)}",${usd?'':r.monto},${usd?r.monto:''}`;
+          return `${r.fecha}${SEP}${esc(servicio)}${SEP}${esc(paciente)}${SEP}${esc(canalLabel)}${SEP}${esc(r.pago)}${SEP}${esc(userLabel(r.usuario))}${SEP}${usd?'':r.monto}${SEP}${usd?r.monto:''}`;
         }).join('\n');
   }
-  else if(tipo==='egresos'){nombre='masdrips_egresos.csv';csv='Fecha,Categoría,Detalle,Proveedor,Método,Registrado por,Monto\n'+DB.egresos.filter(filtrar).map(r=>`${r.fecha},"${r.categoria}","${r.detalle||''}","${r.proveedor||''}","${r.metodo}","${userLabel(r.usuario)}",${r.monto}`).join('\n');}
+  else if(tipo==='egresos'){
+    nombre='masdrips_egresos.csv';
+    const esc=v=>`"${String(v||'').replace(/"/g,'""')}"`;
+    csv='sep=;\nFecha;Categoría;Detalle;Proveedor;Método;Registrado por;Monto\n'+
+      DB.egresos.filter(filtrar).map(r=>`${r.fecha}${SEP}${esc(r.categoria)}${SEP}${esc(r.detalle)}${SEP}${esc(r.proveedor)}${SEP}${esc(r.metodo)}${SEP}${esc(userLabel(r.usuario))}${SEP}${r.monto}`).join('\n');
+  }
   else if(tipo==='cashflow'){
     nombre='masdrips_cashflow.csv';
     const esUSD2=p=>p&&(p.includes('dólar')||p.includes('dolar')||p.includes('USD'));
+    const esc=v=>`"${String(v||'').replace(/"/g,'""')}"`;
     const allI=DB.ingresos.filter(filtrar).map(r=>{
       const sinCanal=!r.canal||r.canal.trim()==='';
       const concepto=sinCanal?(r.detalle||r.concepto||''):(r.concepto||'');
@@ -1041,11 +1048,19 @@ function exportar(tipo){
     });
     const allE=DB.egresos.filter(filtrar).map(r=>({fecha:r.fecha,tipo:'Egreso',concepto:r.categoria,canal:'—',pago:r.metodo,usuario:userLabel(r.usuario),usd:false,monto:-Number(r.monto)}));
     const all=[...allI,...allE].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-    csv='Fecha,Tipo,Concepto,Canal,Método de pago,Usuario,Pesos ARS,Dólares USD\n'+
-      all.map(r=>`${r.fecha},"${r.tipo}","${r.concepto}","${r.canal}","${r.pago||''}","${r.usuario}",${r.usd?'':r.monto},${r.usd?r.monto:''}`).join('\n');
+    csv='sep=;\nFecha;Tipo;Concepto;Canal;Método de pago;Usuario;Pesos ARS;Dólares USD\n'+
+      all.map(r=>`${r.fecha}${SEP}${esc(r.tipo)}${SEP}${esc(r.concepto)}${SEP}${esc(r.canal)}${SEP}${esc(r.pago)}${SEP}${esc(r.usuario)}${SEP}${r.usd?'':r.monto}${SEP}${r.usd?r.monto:''}`).join('\n');
   }
-  else if(tipo==='deudas'){nombre='masdrips_deudas.csv';csv='Concepto,Categoría,Estado,Monto,Vencimiento,Notas\n'+DB.deudas.map(d=>`"${d.concepto}","${d.categoria}","${d.estado}",${d.monto||0},"${d.vencimiento||''}","${d.notas||''}"`).join('\n');}
-  else if(tipo==='inventario'){nombre='masdrips_inventario.csv';csv='Producto,Categoría,Stock,Unidad,Mínimo,Estado,Costo unitario,Valor total\n'+DB.stock.map(s=>`"${s.nombre}","${s.categoria}",${s.cantidad},"${s.unidad}",${s.minimo},"${s.cantidad<=s.minimo?'Stock bajo':'OK'}",${s.costo},${s.cantidad*s.costo}`).join('\n');}
+  else if(tipo==='deudas'){
+    nombre='masdrips_deudas.csv';
+    const esc=v=>`"${String(v||'').replace(/"/g,'""')}"`;
+    csv='sep=;\nConcepto;Categoría;Estado;Monto;Vencimiento;Notas\n'+DB.deudas.map(d=>`${esc(d.concepto)}${SEP}${esc(d.categoria)}${SEP}${esc(d.estado)}${SEP}${d.monto||0}${SEP}${esc(d.vencimiento)}${SEP}${esc(d.notas)}`).join('\n');
+  }
+  else if(tipo==='inventario'){
+    nombre='masdrips_inventario.csv';
+    const esc=v=>`"${String(v||'').replace(/"/g,'""')}"`;
+    csv='sep=;\nProducto;Categoría;Stock;Unidad;Mínimo;Estado;Costo unitario;Valor total\n'+DB.stock.map(s=>`${esc(s.nombre)}${SEP}${esc(s.categoria)}${SEP}${s.cantidad}${SEP}${esc(s.unidad)}${SEP}${s.minimo}${SEP}${esc(s.cantidad<=s.minimo?'Stock bajo':'OK')}${SEP}${s.costo}${SEP}${s.cantidad*s.costo}`).join('\n');
+  }
   if(!csv){alert('No hay datos para exportar.');return;}
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
