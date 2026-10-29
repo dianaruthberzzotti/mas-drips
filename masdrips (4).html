@@ -267,6 +267,31 @@
         </div>
       </div>
     </div>
+    <!-- SALDOS MANUALES -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">🏦 Saldos disponibles</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">BANCO COMAFI $ (PESOS)</label><input type="number" id="sal-comafi" class="form-input"></div>
+        <div class="form-group"><label class="form-label">BANCO COMAFI USD</label><input type="number" id="sal-comafi-usd" class="form-input"></div>
+        <div class="form-group"><label class="form-label">BANCO CORRIENTES ($)</label><input type="number" id="sal-corrientes" class="form-input"></div>
+        <div class="form-group"><label class="form-label">MERCADO PAGO ($)</label><input type="number" id="sal-mp" class="form-input"></div>
+        <div class="form-group"><label class="form-label">EFECTIVO ($)</label><input type="number" id="sal-efectivo" class="form-input"></div>
+        <div class="form-group"><label class="form-label">EFECTIVO USD</label><input type="number" id="sal-efectivo-usd" class="form-input"></div>
+        <div class="form-group"><label class="form-label">🔄 TIPO DE CAMBIO BLUE ($)</label><input type="number" id="sal-tc" class="form-input"></div>
+        <div class="form-group"><label class="form-label">🔴 DESCUBIERTO USADO CORRIENTES ($)</label><input type="number" id="sal-desc" class="form-input"></div>
+      </div>
+      <button class="btn" onclick="guardarSaldos()" style="background:var(--teal);color:#fff">💾 Guardar saldos</button>
+      <div style="margin-top:10px;font-size:13px;color:var(--text-3)" id="sal-msg"></div>
+      <div style="margin-top:14px;padding:12px;background:var(--bg-2);border-radius:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px">CALCULADORA DE CONVERSIÓN</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div><div style="font-size:11px;color:var(--text-3)">MONTO EN USD</div><input type="number" id="sal-conv-usd" oninput="calcConv()" style="width:140px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text-1)"></div>
+          <div><div style="font-size:11px;color:var(--text-3)">EQUIVALENTE EN $</div><input type="number" id="sal-conv-ars" readonly style="width:160px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-2);color:var(--text-1)"></div>
+          <div style="font-size:12px;color:var(--text-3)" id="sal-tc-label"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">Cashflow últimos 6 meses <span class="badge" id="d-estado"></span></div>
       <div class="chart-wrap" id="d-chart"></div>
@@ -520,7 +545,7 @@ async function sbUpdate(table, id, data) {
   if(!r.ok) throw new Error(await r.text());
 }
 
-let DB = {ingresos:[], egresos:[], stock:[], deudas:[]};
+let DB = {ingresos:[], egresos:[], stock:[], deudas:[], saldos:[]};
 let currentUser = localStorage.getItem('md_user') || null;
 let selectedUserTemp = null;
 let pagoDeudaId = null;
@@ -562,8 +587,8 @@ async function init() {
   try {
     setSyncStatus('saving','Cargando...');
     // Create deudas table if needed via insert test
-    const [ing,eg,st] = await Promise.all([sbGet('ingresos'), sbGet('egresos'), sbGet('stock','order=nombre.asc')]);
-    DB.ingresos=ing; DB.egresos=eg; DB.stock=st.length?st:[];
+    const [ing,eg,st,sal] = await Promise.all([sbGet('ingresos'), sbGet('egresos'), sbGet('stock','order=nombre.asc'), sbGet('saldos')]);
+    DB.ingresos=ing; DB.egresos=eg; DB.stock=st.length?st:[]; DB.saldos=sal||[];
     if(!st.length) await seedStock();
     // Load deudas
     try { DB.deudas = await sbGet('deudas','order=vencimiento.asc'); } catch(e){ DB.deudas=[]; }
@@ -601,7 +626,7 @@ function nav(page,el) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   el.classList.add('active');
-  if(page==='dashboard') renderDashboard();
+  if(page==='dashboard'){ renderDashboard(); cargarSaldos(); }
   if(page==='cashflow'){ buildMesSelector(); renderCashflow(); }
   if(page==='inventario') renderStock();
   if(page==='deudas') renderDeudas();
@@ -882,6 +907,56 @@ function renderDashboard(){
     <td>${r.tipo==='I'?'<span class="badge bg">Ingreso</span>':'<span class="badge bc">Egreso</span>'}</td>
     <td style="text-align:right;font-weight:700;color:${r.tipo==='I'?'var(--teal)':'var(--coral)'}">${r.tipo==='I'?'+':'-'}${fmt(r.monto)}</td>
   </tr>`).join('');
+}
+
+function cargarSaldos() {
+  const mapa = {
+    'comafi':'sal-comafi','comafi_usd':'sal-comafi-usd','corrientes':'sal-corrientes',
+    'mp':'sal-mp','efectivo':'sal-efectivo','efectivo_usd':'sal-efectivo-usd',
+    'tipo_cambio':'sal-tc','descubierto_usado':'sal-desc'
+  };
+  (DB.saldos||[]).forEach(s=>{
+    const id = mapa[s.id];
+    if(id){ const el=document.getElementById(id); if(el) el.value=s.monto; }
+  });
+  const tc = (DB.saldos||[]).find(s=>s.id==='tipo_cambio');
+  if(tc) document.getElementById('sal-tc-label').textContent='TC: $'+Number(tc.monto).toLocaleString('es-AR')+'/USD';
+}
+
+async function guardarSaldos() {
+  const mapa = [
+    {id:'comafi',          el:'sal-comafi'},
+    {id:'comafi_usd',      el:'sal-comafi-usd'},
+    {id:'corrientes',      el:'sal-corrientes'},
+    {id:'mp',              el:'sal-mp'},
+    {id:'efectivo',        el:'sal-efectivo'},
+    {id:'efectivo_usd',    el:'sal-efectivo-usd'},
+    {id:'tipo_cambio',     el:'sal-tc'},
+    {id:'descubierto_usado',el:'sal-desc'},
+  ];
+  const msg = document.getElementById('sal-msg');
+  msg.textContent = 'Guardando...';
+  let ok = true;
+  for(const m of mapa){
+    const val = document.getElementById(m.el)?.value;
+    if(val===''||val===undefined) continue;
+    const r = await fetch(`${SUPA_URL}/rest/v1/saldos?id=eq.${m.id}`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'return=minimal'},
+      body: JSON.stringify({monto: parseFloat(val)})
+    });
+    if(!r.ok) ok=false;
+  }
+  msg.textContent = ok ? '✅ Saldos guardados' : '❌ Error al guardar';
+  setTimeout(()=>msg.textContent='',3000);
+  const tc = parseFloat(document.getElementById('sal-tc').value)||0;
+  if(tc) document.getElementById('sal-tc-label').textContent='TC: $'+tc.toLocaleString('es-AR')+'/USD';
+}
+
+function calcConv(){
+  const usd=parseFloat(document.getElementById('sal-conv-usd').value)||0;
+  const tc=parseFloat(document.getElementById('sal-tc')?.value)||1500;
+  document.getElementById('sal-conv-ars').value=Math.round(usd*tc);
 }
 
 function buildMesSelector() {
