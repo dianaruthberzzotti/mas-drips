@@ -924,9 +924,25 @@ function exportar(tipo){
   const desde=document.getElementById('ex-desde').value, hasta=document.getElementById('ex-hasta').value;
   let csv='', nombre='';
   const filtrar=r=>(!desde||r.fecha>=desde)&&(!hasta||r.fecha<=hasta);
-  if(tipo==='ingresos'){nombre='masdrips_ingresos.csv';csv='Fecha,Servicio,Detalle,Canal,Método de pago,Registrado por,Monto\n'+DB.ingresos.filter(filtrar).map(r=>`${r.fecha},"${r.concepto}","${r.detalle||''}","${r.canal}","${r.pago}","${userLabel(r.usuario)}",${r.monto}`).join('\n');}
+  if(tipo==='ingresos'){
+    nombre='masdrips_ingresos.csv';
+    const esUSD=p=>p&&(p.includes('dólar')||p.includes('dolar')||p.includes('USD'));
+    csv='Fecha,Servicio,Detalle,Canal,Método de pago,Registrado por,Pesos ARS,Dólares USD\n'+
+      DB.ingresos.filter(filtrar).map(r=>{
+        const usd=esUSD(r.pago);
+        return `${r.fecha},"${r.concepto}","${r.detalle||''}","${r.canal}","${r.pago}","${userLabel(r.usuario)}",${usd?'':r.monto},${usd?r.monto:''}`;
+      }).join('\n');
+  }
   else if(tipo==='egresos'){nombre='masdrips_egresos.csv';csv='Fecha,Categoría,Detalle,Proveedor,Método,Registrado por,Monto\n'+DB.egresos.filter(filtrar).map(r=>`${r.fecha},"${r.categoria}","${r.detalle||''}","${r.proveedor||''}","${r.metodo}","${userLabel(r.usuario)}",${r.monto}`).join('\n');}
-  else if(tipo==='cashflow'){nombre='masdrips_cashflow.csv';const all=[...DB.ingresos.map(r=>({fecha:r.fecha,tipo:'Ingreso',concepto:r.concepto,canal:r.canal,usuario:userLabel(r.usuario),monto:r.monto})),...DB.egresos.map(r=>({fecha:r.fecha,tipo:'Egreso',concepto:r.categoria,canal:'—',usuario:userLabel(r.usuario),monto:-r.monto}))].filter(filtrar).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));csv='Fecha,Tipo,Concepto,Canal,Usuario,Monto\n'+all.map(r=>`${r.fecha},"${r.tipo}","${r.concepto}","${r.canal}","${r.usuario}",${r.monto}`).join('\n');}
+  else if(tipo==='cashflow'){
+    nombre='masdrips_cashflow.csv';
+    const esUSD2=p=>p&&(p.includes('dólar')||p.includes('dolar')||p.includes('USD'));
+    const allI=DB.ingresos.filter(filtrar).map(r=>({fecha:r.fecha,tipo:'Ingreso',concepto:r.concepto,canal:r.canal,pago:r.pago,usuario:userLabel(r.usuario),usd:esUSD2(r.pago),monto:Number(r.monto)}));
+    const allE=DB.egresos.filter(filtrar).map(r=>({fecha:r.fecha,tipo:'Egreso',concepto:r.categoria,canal:'—',pago:r.metodo,usuario:userLabel(r.usuario),usd:false,monto:-Number(r.monto)}));
+    const all=[...allI,...allE].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+    csv='Fecha,Tipo,Concepto,Canal,Método de pago,Usuario,Pesos ARS,Dólares USD\n'+
+      all.map(r=>`${r.fecha},"${r.tipo}","${r.concepto}","${r.canal}","${r.pago||''}","${r.usuario}",${r.usd?'':r.monto},${r.usd?r.monto:''}`).join('\n');
+  }
   else if(tipo==='deudas'){nombre='masdrips_deudas.csv';csv='Concepto,Categoría,Estado,Monto,Vencimiento,Notas\n'+DB.deudas.map(d=>`"${d.concepto}","${d.categoria}","${d.estado}",${d.monto||0},"${d.vencimiento||''}","${d.notas||''}"`).join('\n');}
   else if(tipo==='inventario'){nombre='masdrips_inventario.csv';csv='Producto,Categoría,Stock,Unidad,Mínimo,Estado,Costo unitario,Valor total\n'+DB.stock.map(s=>`"${s.nombre}","${s.categoria}",${s.cantidad},"${s.unidad}",${s.minimo},"${s.cantidad<=s.minimo?'Stock bajo':'OK'}",${s.costo},${s.cantidad*s.costo}`).join('\n');}
   if(!csv){alert('No hay datos para exportar.');return;}
